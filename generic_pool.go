@@ -16,30 +16,30 @@ type FactoryFunc func() (interface{}, error)
 type CloseFunc func(interface{}) error
 
 type Pool interface {
-	Acquire() (interface{}, error) // 获取资源
-	Release(interface{}) error     // 释放资源
-	Close(interface{}) error       // 关闭资源
-	Shutdown() error               // 关闭池
+	Acquire() (interface{}, error) // acquire object from pool
+	Release(interface{}) error     // release object from pool
+	Close(interface{}) error       // close or delete object
+	Shutdown() error               // shutdown current pool
 }
 
 type PoolConfig struct {
-	Min         int           // 池中最小对象数
-	Max         int           // 池中最大对象数
-	LiftTime    time.Duration // 对象生命周期
-	FactoryFunc FactoryFunc   // 创建对象的工厂方法
-	CloseFunc   CloseFunc     // 删除对象或关闭连接的方法
+	Min         int           // minimum objects of pool
+	Max         int           // maximum objects of pool
+	LiftTime    time.Duration // object's life tile
+	FactoryFunc FactoryFunc   // function to new object
+	CloseFunc   CloseFunc     // function to close or delete object
 }
 
 type GenericPool struct {
 	sync.Mutex
 	pool        chan interface{}
-	maxCap      int           // 池中最大资源数
-	minCap      int           // 池中最少资源数
-	curNum      int           // 当前池中资源数
-	closed      bool          // 池是否已关闭
-	maxLifeTime time.Duration // 最大生命周期
-	factoryFunc FactoryFunc   // 创建连接的方法
-	closeFunc   CloseFunc     // 释放资源的方法
+	maxCap      int           // max capacity of pool
+	minCap      int           // min capacity of pool
+	curNum      int           // current object number in pool
+	closed      bool
+	maxLifeTime time.Duration
+	factoryFunc FactoryFunc
+	closeFunc   CloseFunc
 }
 
 func NewGenericPool(config *PoolConfig) (*GenericPool, error) {
@@ -78,7 +78,7 @@ func (p *GenericPool) Acquire() (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		// TODO maxLifeTime 处理
+		// TODO handle maxLifeTime
 		return obj, nil
 	}
 }
@@ -95,7 +95,7 @@ func (p *GenericPool) getOrCreate() (interface{}, error) {
 		p.Unlock()
 		return obj, nil
 	}
-	// 新建连接
+	// new object
 	obj, err := p.factoryFunc()
 	if err != nil {
 		p.Unlock()
@@ -106,7 +106,7 @@ func (p *GenericPool) getOrCreate() (interface{}, error) {
 	return obj, nil
 }
 
-// 释放单个资源到连接池
+// release object into pool
 func (p *GenericPool) Release(obj interface{}) error {
 	if p.closed {
 		return ErrPoolClosed
@@ -117,7 +117,7 @@ func (p *GenericPool) Release(obj interface{}) error {
 	return nil
 }
 
-// 关闭单个资源
+// close or delete object
 func (p *GenericPool) Close(obj interface{}) error {
 	p.Lock()
 	if err := p.closeFunc(obj); err != nil {
@@ -129,7 +129,7 @@ func (p *GenericPool) Close(obj interface{}) error {
 	return nil
 }
 
-// 关闭连接池，释放所有资源
+// shutdown current pool, and remove all object from that pool
 func (p *GenericPool) Shutdown() error {
 	if p.closed {
 		return ErrPoolClosed
@@ -148,7 +148,7 @@ func (p *GenericPool) Shutdown() error {
 	return nil
 }
 
-// 查看当前池中资源的数量
+// object numbers in current pool
 func (p *GenericPool) Len() int {
 	return len(p.pool)
 }
