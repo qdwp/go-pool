@@ -3,11 +3,11 @@ package pool
 import (
 	"log"
 	"math/rand"
+	"runtime"
 	"testing"
 	"time"
 
 	"github.com/valyala/fasthttp"
-	"runtime"
 )
 
 func factory() (interface{}, error) {
@@ -54,7 +54,7 @@ func responseCloser(i interface{}) error {
 var config = &PoolConfig{
 	Min:         3,
 	Max:         5,
-	LiftTime:    time.Second * 5,
+	LiftTime:    5,
 	FactoryFunc: clientFactory,
 	CloseFunc:   clientCloser,
 }
@@ -62,7 +62,7 @@ var config = &PoolConfig{
 var requestConfig = &PoolConfig{
 	Min:         3,
 	Max:         5,
-	LiftTime:    time.Second * 5,
+	LiftTime:    5,
 	FactoryFunc: requestFactory,
 	CloseFunc:   requestCloser,
 }
@@ -70,7 +70,7 @@ var requestConfig = &PoolConfig{
 var responseConfig = &PoolConfig{
 	Min:         3,
 	Max:         5,
-	LiftTime:    time.Second * 5,
+	LiftTime:    5,
 	FactoryFunc: responseFactory,
 	CloseFunc:   responseCloser,
 }
@@ -93,18 +93,18 @@ func TestGenericPool_Acquire(t *testing.T) {
 	if err != nil {
 		t.Log("[ERR]", err)
 	}
-	t.Logf("[SUCC] %T %+v", v1, v1.(int))
+	t.Logf("[SUCC] %T %+v", v1, v1.Object.(int))
 
 	v2, _ := pool.Acquire()
-	t.Logf("[SUCC] %T %+v", v2, v2.(int))
+	t.Logf("[SUCC] %T %+v", v2, v2.Object.(int))
 	v3, _ := pool.Acquire()
-	t.Logf("[SUCC] %T %+v", v3, v3.(int))
+	t.Logf("[SUCC] %T %+v", v3, v3.Object.(int))
 	v4, err := pool.Acquire()
 	if err != nil {
 		t.Log("[ERR]", err)
 	}
 	t.Log("[SUCC]", pool.Len())
-	t.Logf("[SUCC] %T %+v", v4, v4.(int))
+	t.Logf("[SUCC] %T %+v", v4, v4.Object.(int))
 }
 
 func TestGenericPool_Release(t *testing.T) {
@@ -119,7 +119,7 @@ func TestGenericPool_Release(t *testing.T) {
 		t.Log("[ERR]", err)
 	}
 	t.Log("[SUCC]", pool.Len())
-	t.Logf("[SUCC] %T %+v", v1, v1.(int))
+	t.Logf("[SUCC] %T %+v", v1, v1.Object.(int))
 	if err := pool.Release(v1); err != nil {
 		t.Log("[ERR]", err)
 	}
@@ -213,7 +213,7 @@ func TestFastHttpClient3(t *testing.T) {
 			t.Log("[ERR]", err)
 		}
 
-		_, _, err = v.(*fasthttp.Client).Get(nil, "http://www.google.com.hk")
+		_, _, err = v.Object.(*fasthttp.Client).Get(nil, "http://www.google.com.hk")
 		if err != nil {
 			t.Log("[ERR]", err)
 		}
@@ -255,8 +255,8 @@ func TestFastHttpClient4(t *testing.T) {
 
 		req, _ := reqPool.Acquire()
 		res, _ := resPool.Acquire()
-		req.(*fasthttp.Request).SetRequestURI("http://www.google.com.hk")
-		err = v.(*fasthttp.Client).Do(req.(*fasthttp.Request), res.(*fasthttp.Response))
+		req.Object.(*fasthttp.Request).SetRequestURI("http://www.google.com.hk")
+		err = v.Object.(*fasthttp.Client).Do(req.Object.(*fasthttp.Request), res.Object.(*fasthttp.Response))
 		if err != nil {
 			t.Log("[ERR]", err)
 		}
