@@ -78,11 +78,11 @@ func NewGenericPool(config *PoolConfig) (*GenericPool, error) {
 }
 
 func (p *GenericPool) isLiftTimeOut(obj PoolObject) bool {
-	if p.maxLifeTime <= 0 {
+	if int64(p.maxLifeTime) <= 0 {
 		// if object is invalid
 		return false
 	}
-	return obj.CreateTime+p.maxLifeTime <= time.Now().Unix()
+	return obj.CreateTime+int64(p.maxLifeTime) <= time.Now().Unix()
 }
 
 func (p *GenericPool) Acquire() (poolObj PoolObject, err error) {
