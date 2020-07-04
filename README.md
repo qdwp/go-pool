@@ -7,7 +7,7 @@ A package for Go language whitch you can create a generic pool using `interface{
 ## Install
 
 ```
-go get -u github.com/tyrodw/go-pool
+	go get -u github.com/qdwp/go-pool
 ```
 
 ## Interface
